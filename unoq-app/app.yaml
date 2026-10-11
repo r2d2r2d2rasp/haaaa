@@ -1,0 +1,7 @@
+# app.yaml: formato verificato con `arduino-app-cli app new` (CLI 0.13.0).
+name: bussense
+icon: 🚌
+# porta del WebSocket per il telefono
+ports: [8765]
+# i brick (object_detection, web_ui) si aggiungono da App Lab
+bricks: []

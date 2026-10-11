@@ -1,0 +1,41 @@
+# Python
+.venv*/
+__pycache__/
+*.pyc
+
+# Cache Hugging Face (rigenerabile con tools/dataset/build_dataset.py)
+dataset_cache/
+
+# Foto di debug NON oscurate scaricate dalla UNO Q (volti/targhe in chiaro)
+debug_frames_pc/
+data/
+
+# Build Arduino (arduino-cli)
+unoq_*/build/
+
+# Android / Gradle
+phone/android-app/build/
+phone/android-app/app/build/
+phone/android-app/.gradle/
+phone/android-app/local.properties
+phone/android-app/.idea/workspace.xml
+phone/android-app/.idea/caches/
+phone/android-app/.idea/deploymentTargetSelector.xml
+*.iml
+.cxx/
+.externalNativeBuild/
+captures/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Piattaforma web (Next.js)
+web/node_modules/
+web/.next/
+web/.env*
+!web/.env.example
+web/next-env.d.ts
+# copiato da node_modules in postinstall
+web/public/maplibre-gl-worker.mjs
+web/.vercel/
