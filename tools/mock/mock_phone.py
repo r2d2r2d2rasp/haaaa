@@ -5,6 +5,9 @@ una buca ogni 8 s (inviata due volte per provare la deduplica) e una frenata bru
 
     pip install websockets
     python tools/mock/mock_phone.py --url ws://127.0.0.1:8765/phone --seconds 20
+
+Con --frames CARTELLA le foto "frame" sono i JPEG di quella cartella, in ordine e
+a ciclo, invece di un JPEG finto: serve a provare la visione della UNO Q.
 """
 import argparse
 import asyncio
@@ -12,6 +15,7 @@ import base64
 import json
 import math
 import time
+from pathlib import Path
 
 import websockets
 
@@ -28,7 +32,7 @@ def pos_at(t: float):
     return lat, lon
 
 
-async def main(url: str, seconds: int):
+async def main(url: str, seconds: int, frames: list[str]):
     seq = int(time.time() * 1000)
     acks, sent_events = set(), set()
 
@@ -55,7 +59,8 @@ async def main(url: str, seconds: int):
             p = {"lat": lat, "lon": lon, "acc_m": 4.5, "speed_mps": SPEED, "heading_deg": HEADING, "fix_age_ms": 50}
             if i % 2 == 0:
                 await ws.send(json.dumps(msg("track", now, {**p, "imu": {"az_rms_ms2": 0.4, "decel_max_ms2": 0.3, "latacc_max_ms2": 0.2, "n": 100, "fwd_calibrated": True}})))
-            await ws.send(json.dumps(msg("frame", now, {**p, "sharp": 80.0, "w": 640, "h": 360, "jpeg_b64": FAKE_JPEG})))
+            jpeg = frames[i % len(frames)] if frames else FAKE_JPEG
+            await ws.send(json.dumps(msg("frame", now, {**p, "sharp": 80.0, "w": 640, "h": 360, "jpeg_b64": jpeg})))
             if i % 16 == 8:                   # buca, inviata due volte (la seconda è un duplicato)
                 ev = msg("event", now, {**p, "cls": "pothole", "src": "imu", "conf": 0.72, "severity": 2,
                                         "imu": {"p2p_ms2": 11.0, "thr_ms2": 9.0}, "frame_dt_ms": 900, "jpeg_b64": FAKE_JPEG})
@@ -78,5 +83,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="ws://127.0.0.1:8765/phone")
     ap.add_argument("--seconds", type=int, default=20)
+    ap.add_argument("--frames", type=Path, help="cartella di JPEG da inviare come foto 'frame'")
     a = ap.parse_args()
-    asyncio.run(main(a.url, a.seconds))
+    frames = [base64.b64encode(f.read_bytes()).decode()
+              for f in sorted(a.frames.glob("*.jp*g"))] if a.frames else []
+    if a.frames and not frames:
+        raise SystemExit(f"nessun JPEG in {a.frames}")
+    asyncio.run(main(a.url, a.seconds, frames))

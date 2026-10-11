@@ -45,9 +45,11 @@ TYPE_TO_CATEGORY = {
 ENV_TO_METRIC = {
     "t_c": "temperature_c",
     "rh_pct": "humidity_pct",
-    "co2_ppm": "co2_ppm",
+    "co2_ppm": "co2_ppm",      # con l'SGP30 è CO2 equivalente (stimata), non misurata
     "voc_idx": "voc_index",
     "voc_raw": "voc_raw",
+    "tvoc_ppb": "tvoc_ppb",    # SGP30
+    "light_pct": "light_pct",  # sensore di luce Grove su A0, 0-100
 }
 
 # stessa area accettata dal server (web/app/api/v1/reports/route.ts): fuori, la richiesta è rifiutata

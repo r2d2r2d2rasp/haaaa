@@ -1,0 +1,4 @@
+buca
+cassonetto_pieno
+normale
+rifiuti

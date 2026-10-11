@@ -109,9 +109,36 @@ cd unoq-app/python && BUSSENSE_DATA=./data TS_BASE_URL=http://127.0.0.1:3999 TS_
 Poi avvia `tools/mock/mock_phone.py` come sopra. Il server finto stampa ogni richiesta e applica le stesse
 regole di quello vero; con `--fail-every N` risponde 500 a una richiesta ogni N, per provare i nuovi tentativi.
 
+## Visione (`bussense/vision.py`)
+
+Ogni foto `frame` del telefono passa da un classificatore che gira sulla CPU della UNO Q. Una
+segnalazione parte solo se la stessa classe (`buca`, `cassonetto_pieno`, `rifiuti`) supera la soglia
+in almeno 2 delle ultime 3 foto, e non ce n'è già una dello stesso tipo entro 20 m e 60 s. Va alla
+piattaforma come le altre, con i dati dei sensori del MCU in `metadata.env`.
+
+Il modello si sceglie all'avvio:
+1. **LiteRT** (`bussense/classifier.py`) se esiste `python/models/bussense_int8.tflite` con il suo
+   `labels.txt`. Si addestra e si installa da [`ml/`](../ml/README.md): `python export_tflite.py --app`;
+2. altrimenti il **brick Edge Impulse** `image_classification` di App Lab;
+3. se non c'è nessuno dei due, l'app parte lo stesso, senza visione.
+
+| Variabile | Default | |
+|---|---|---|
+| `BUSSENSE_VISION` | `1` | `0` = visione spenta |
+| `BUSSENSE_TFLITE` | `python/models/bussense_int8.tflite` | |
+| `BUSSENSE_VISION_CONF` | `0.70` | soglia per foto; si sceglie con `ml/evaluate.py` |
+| `BUSSENSE_VISION_THREADS` | `4` | |
+| `BUSSENSE_VISION_MODEL` | nome del file del modello | inviato in `metadata.model` |
+
+Provare il modello sulla board, dalla cartella `python/`:
+```bash
+python -m bussense.classifier foto.jpg --benchmark 50
+```
+
+Le foto restano in RAM anche durante l'inferenza: la visione non scrive niente su disco.
+
 ## Dove si aggancia il resto
 
-- **Visione (R2):**
-  - imposta `rx.on_frame = funzione(jpeg, meta)`, che riceve le foto già selezionate dal telefono;
-  - per ogni rilevamento chiama `rx.report(type=..., src="vision", conf=..., ts_ms=meta["ts_ms"], lat=meta["lat"], ...)`.
+- **Visione:** vedi sopra. Un motore diverso basta che restituisca `(etichetta, confidenza 0..1)`
+  per un JPEG: si aggiunge in `_load_backend()` di `vision.py`.
 - **Privacy:** implementa `bussense/privacy.py`. Finché restituisce `None`, nessuna immagine viene salvata (fail-closed).

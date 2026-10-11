@@ -9,6 +9,8 @@ dataset_cache/
 # Foto di debug NON oscurate scaricate dalla UNO Q (volti/targhe in chiaro)
 debug_frames_pc/
 data/
+# Classe negativa per il training (ml/README.md): sono frame del bus, non oscurati, e il repo è pubblico
+dataset/normale/
 
 # Build Arduino (arduino-cli)
 unoq_*/build/

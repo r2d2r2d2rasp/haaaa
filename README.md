@@ -16,10 +16,12 @@ salva una segnalazione locale con posizione GPS.
 | `unoq-app/` | App App Lab per la UNO Q, lato Linux (server WebSocket Python, SQLite) |
 | `unoq_sensori/`, `unoq_registratore/`, `unoq_diag/` | Sketch per il MCU STM32 della UNO Q |
 | `tools/` | Script di supporto: generazione dataset, telefono finto per i test |
+| `ml/` | Addestramento del classificatore visivo (buca, rifiuti, cassonetto pieno) ed export `.tflite` int8 per la UNO Q |
 | `dataset/` | Immagini per l'addestramento (buca, cassonetto_pieno, rifiuti) — fonti in `dataset/ATTRIBUTION.md` |
 | `mole/` | Script Fusion 360 per il case a forma di Mole Antonelliana |
 | `web/` | **Piattaforma TorinoSegnala** (Next.js + Supabase, deploy su Vercel): mappa, statistiche, area Comune, Console IT |
 | `docs/POD_API.md` | API con cui i POD inviano segnalazioni, misure e battiti alla piattaforma |
+| `docs/MODELLO.md` | Rete neurale di visione: architettura, dati, addestramento, risultati, limiti |
 | `pod-examples/` | Client Python di esempio per i POD (lato Linux della UNO Q) |
 
 Non sono nel repo: il virtualenv `.venv-ml`, la cache Hugging Face `dataset_cache/` (rigenerabile con

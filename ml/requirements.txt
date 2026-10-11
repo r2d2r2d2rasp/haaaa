@@ -1,0 +1,12 @@
+# Ambiente di addestramento (PC, dentro WSL2 — vedi README)
+# Python 3.12: TensorFlow non ha wheel per il 3.14 di Ubuntu 26.04.
+#
+#   uv venv --python 3.12 ~/venv-ml
+#   uv pip install --python ~/venv-ml/bin/python -r requirements.txt
+#
+# Per il training su GPU sostituire tensorflow con tensorflow[and-cuda].
+tensorflow==2.20.0
+pillow
+numpy
+scikit-learn
+matplotlib

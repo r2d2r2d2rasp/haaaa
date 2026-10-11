@@ -1,6 +1,6 @@
 # BusSense — Stato del progetto
 
-_Aggiornato al 10 ottobre 2026._
+_Aggiornato all'11 ottobre 2026._
 
 ## 1. App Android (telefono) — `phone/android-app`
 
@@ -69,7 +69,49 @@ privacy, mai su disco).
 - Testato sulla UNO Q reale: 153 foto scaricate con successo sul PC
   (`C:\Users\marem\Documents\hackturin\debug_frames_pc\`) tramite `adb pull`.
 
-## 3. Cose aperte / da tenere a mente
+## 3. Visione sulla UNO Q (modello LiteRT) — `ml/`, `unoq-app/python/bussense/`
+
+Al posto del brick Edge Impulse c'è un classificatore addestrato da noi: MobileNetV2 quantizzato
+int8 (2,7 MB), eseguito da `bussense/classifier.py` con `ai-edge-litert` sulla CPU della board.
+Pipeline di addestramento in `ml/` (vedi `ml/README.md`); si allena su PC con GPU, in WSL2.
+
+- `vision.py` sceglie il motore all'avvio: LiteRT se esiste `python/models/bussense_int8.tflite`,
+  altrimenti il brick Edge Impulse. Conferma 2/3, deduplica e invio sono invariati.
+- `ml/export_tflite.py --app` installa modello e `labels.txt` in `unoq-app/python/models/`.
+- Preprocessing unico (ritaglio quadrato centrale) fra training e board: i frame sono 640x360 e lo
+  "Squash" è il problema citato nel PIANO §6.6.
+- `requirements.txt` dell'app ora include `ai-edge-litert`, `numpy`, `pillow` (wheel aarch64 fino a
+  Python 3.14: il container `python:3.13-slim` va bene).
+- `tools/mock/mock_phone.py --frames CARTELLA` manda JPEG veri invece del JPEG finto.
+
+**Collaudo sul PC** (modello addestrato su dati sintetici, solo per provare la catena): telefono finto
+→ `main.py` → TorinoSegnala finto. Foto di strada normale: 0 segnalazioni. Foto di buche: 4 segnalazioni
+`buca` con `src: vision` accettate (201). Inferenza 5 ms/foto sul PC. **Da misurare sulla board**:
+`python -m bussense.classifier foto.jpg --benchmark 50`.
+
+**Modello v2 in uso** (4 classi con `normale`, 195 frame raccolti dalla board): 98,0% sulla validation,
+41 ms per foto sulla UNO Q. Nella prova dal vivo, telefono puntato su una stanza: 0 segnalazioni su 178 foto
+(la v1 senza `normale` ne aveva fatte 11 in 7 minuti). Documentazione completa in `docs/MODELLO.md`,
+grafiche e PDF per la presentazione in `docs/img/presentazione/`.
+
+### Sulla board fisica (11 ottobre)
+
+- Nuova app App Lab **`user:bussense-live`** con il codice di questo repo, **impostata come app di avvio**.
+  La vecchia `user:bussense` è intatta (ferma). Container `bussense-live-main-1`.
+- **Sketch del MCU** (`unoq-app/sketch/`): è `unoq_registratore.ino` con in più l'invio dei sensori a
+  `main.py` via Bridge (`cabin_co2` = CO2eq SGP30 + T/UR AHT20, `cabin_extra` = TVOC + luce) e una pagina
+  OLED "BUSSENSE" (telefono, segnalazioni, stato invio). La registrazione col pulsante D2 ora la salva
+  `bussense/recorder.py` in `data/registrazioni/`.
+- Hardware verificato: AHT20, SGP30 (reagisce), Modulino Movement, luce A0, pulsante D2. OLED presente
+  (0x3C) ma non ancora verificato a schermo. Dispositivo sconosciuto su Qwiic 0x7E.
+- **Configurazione** in `data/bussense.env` sulla board (App Lab non passa variabili d'ambiente): lì va
+  `TS_API_KEY`, **mai nel repo** (è pubblico).
+- **Rete**: la board si collega all'hotspot del telefono `Galaxy A30s4A5B` (IP 10.220.57.130), con
+  priorità e tentativi infiniti; la Wi-Fi della sede ha l'autoconnessione disattivata
+  (`nmcli connection modify "SaleSindacali-WiFi-Ext" connection.autoconnect yes` per riattivarla).
+- 11 segnalazioni false della v1 marcate `rejected` nella coda di invio: non partiranno mai.
+
+## 4. Cose aperte / da tenere a mente
 
 | Punto | Stato |
 |---|---|
@@ -78,8 +120,11 @@ privacy, mai su disco).
 | `BUSSENSE_DEBUG_SAVE_FRAMES` | **attualmente acceso** sul container di test — da spegnere prima dell'uso reale sul bus |
 | URL nell'app del telefono | punta a `ws://10.220.57.130:8765/phone` (indirizzo di questa sessione di test via hotspot) — da aggiornare per la configurazione di rete definitiva del bus |
 | GPS | fix ottenuto ma con accuratezza bassa (±44 m) in un test indoor; migliora all'aperto, a cielo libero |
+| Classe `normale` per la visione | 195 frame di **una sola stanza**: mancano asfalto, marciapiedi e auto visti dal bus. Raccoglierli con `BUSSENSE_DEBUG_SAVE_FRAMES=1` (`dataset/normale/` è in `.gitignore` per privacy) |
+| Buche nel dataset | solo 90 contro 600 delle altre classi; integrare con RDD2022 e buche vere dai frame |
+| Sensori MCU | collegati via Bridge e verificati. La CO2 dell'SGP30 è *equivalente* (stimata), non misurata come farebbe un SCD41 |
 
-## 4. Prossimi passi possibili
+## 5. Prossimi passi possibili
 
 - Riattivare l'IMU quando si vuole tornare al rilevamento di buche/frenate/sbandate
 - Impacchettare il server come vera app App Lab (invece del container Docker manuale di test)
@@ -87,5 +132,6 @@ privacy, mai su disco).
   reale sul bus
 - Tarare le soglie IMU (quando riattivata) con un giro registrato, come indicato nel README del
   telefono
-- Livello 2/3 del piano (detector LiteRT, oscuramento volti/targhe sul telefono) — non ancora
-  iniziati
+- Raccogliere `normale` sulla strada vera e buche dal bus, poi riaddestrare (`ml/README.md`)
+- Spegnere `BUSSENSE_DEBUG_SAVE_FRAMES` dopo ogni raccolta (ora è a 0)
+- Oscuramento volti/targhe sul telefono — non ancora iniziato

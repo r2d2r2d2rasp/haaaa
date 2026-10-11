@@ -1,0 +1,8 @@
+# Ambiente e dati rigenerabili: si ricreano con requirements.txt e prepare_data.py
+.venv-ml/
+data_prepared/
+__pycache__/
+
+# Output del training. Il .tflite finale va invece versionato, se serve
+# sulla board senza rifare il training: toglilo da qui in quel caso.
+modello/
